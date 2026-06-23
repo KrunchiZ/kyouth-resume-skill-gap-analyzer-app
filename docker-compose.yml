@@ -1,0 +1,35 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./backend
+    image: backend:1.0
+    container_name: resume-backend
+    env_file: .env
+    ports:
+      - "8001:8001"
+    networks:
+      - app-net
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+    image: frontend:1.0
+    container_name: resume-frontend
+    env_file: .env
+    environment:
+      # Tell the frontend JS where the backend lives (public URL seen by browser)
+      BACKEND_URL: ${BACKEND_URL:-http://localhost:8001}
+    ports:
+      - "8000:8000"
+    depends_on:
+      - backend
+    networks:
+      - app-net
+    restart: unless-stopped
+
+networks:
+  app-net:
+    driver: bridge

@@ -1,11 +1,528 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Hello World</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Resume Helper Chatbot</title>
+
+  <!-- Bootstrap 5 -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
+    crossorigin="anonymous"
+  />
+
+  <!-- PDF.js for client-side PDF text extraction -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+  <style>
+    /* ── Tokens ─────────────────────────────────────────────── */
+    :root {
+      --purple:      #5B50C8;
+      --purple-dark: #4940a8;
+      --grey-bg:     #EEEEEE;
+      --card-bg:     #FFFFFF;
+      --border:      #E2E2E2;
+      --text:        #1a1a1a;
+      --text-muted:  #888;
+      --radius-card: 16px;
+      --radius-msg:  18px;
+      --radius-input: 12px;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    /* ── Base ────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: #FAFAFA;
+      font-family: var(--font);
+      color: var(--text);
+    }
+
+    /* ── Page layout ─────────────────────────────────────────── */
+    .page-wrap {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    /* ── Chat card ───────────────────────────────────────────── */
+    .chat-card {
+      width: 100%;
+      max-width: 780px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(0,0,0,.06);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Chat history ────────────────────────────────────────── */
+    #chat-history {
+      background: var(--grey-bg);
+      flex: 1;
+      min-height: 380px;
+      max-height: 480px;
+      overflow-y: auto;
+      padding: 24px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      scroll-behavior: smooth;
+    }
+
+    /* Thin purple scrollbar */
+    #chat-history::-webkit-scrollbar { width: 4px; }
+    #chat-history::-webkit-scrollbar-track { background: transparent; }
+    #chat-history::-webkit-scrollbar-thumb {
+      background: var(--purple);
+      border-radius: 4px;
+      opacity: .4;
+    }
+
+    /* ── Message bubbles ─────────────────────────────────────── */
+    .msg-row {
+      display: flex;
+      animation: fadeUp .2s ease;
+    }
+    .msg-row.user { justify-content: flex-end; }
+    .msg-row.bot  { justify-content: flex-start; }
+
+    .bubble {
+      max-width: 72%;
+      padding: 10px 14px;
+      border-radius: var(--radius-msg);
+      font-size: .9rem;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    /* Bot bubble: white card with border */
+    .bubble.bot {
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px;
+      color: var(--text);
+    }
+
+    /* User bubble: purple, white text */
+    .bubble.user {
+      background: var(--purple);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Typing indicator ────────────────────────────────────── */
+    .typing-indicator {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 10px 14px;
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-msg);
+      border-bottom-left-radius: 4px;
+      width: fit-content;
+    }
+    .typing-indicator span {
+      width: 6px; height: 6px;
+      background: var(--purple);
+      border-radius: 50%;
+      animation: bounce 1.2s infinite ease;
+    }
+    .typing-indicator span:nth-child(2) { animation-delay: .2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: .4s; }
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0.7); opacity: .5; }
+      40%            { transform: scale(1);   opacity: 1;  }
+    }
+
+    /* ── Input bar ───────────────────────────────────────────── */
+    .input-bar {
+      background: #FFFFFF;
+      border-top: 1px solid var(--border);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Upload button */
+    #upload-btn {
+      flex-shrink: 0;
+      width: 36px; height: 36px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-input);
+      background: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color .15s, background .15s;
+      color: var(--text-muted);
+    }
+    #upload-btn:hover {
+      border-color: var(--purple);
+      color: var(--purple);
+      background: #f5f4ff;
+    }
+    #upload-btn svg { pointer-events: none; }
+
+    /* Hidden real file input */
+    #pdf-input { display: none; }
+
+    /* Text input */
+    #msg-input {
+      flex: 1;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-input);
+      padding: 8px 14px;
+      font-size: .9rem;
+      font-family: var(--font);
+      color: var(--text);
+      background: #FAFAFA;
+      outline: none;
+      transition: border-color .15s, background .15s;
+    }
+    #msg-input:focus {
+      border-color: var(--purple);
+      background: #fff;
+    }
+    #msg-input::placeholder { color: var(--text-muted); }
+    #msg-input:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* Send button */
+    #send-btn {
+      flex-shrink: 0;
+      background: var(--purple);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-input);
+      padding: 8px 18px;
+      font-size: .9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s, transform .1s;
+    }
+    #send-btn:hover:not(:disabled) { background: var(--purple-dark); }
+    #send-btn:active:not(:disabled) { transform: scale(.97); }
+    #send-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── File badge ──────────────────────────────────────────── */
+    #file-badge {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      background: #f0eeff;
+      border: 1px solid #c9c4f5;
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-size: .78rem;
+      color: var(--purple);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 200px;
+    }
+    #file-badge.visible { display: flex; }
+    #file-badge button {
+      background: none; border: none; cursor: pointer;
+      color: var(--purple); font-size: .85rem; padding: 0; line-height: 1;
+    }
+
+    /* ── Error toast ─────────────────────────────────────────── */
+    #toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: #e53e3e; color: #fff;
+      padding: 10px 18px; border-radius: 10px;
+      font-size: .85rem; opacity: 0;
+      transition: opacity .25s;
+      pointer-events: none;
+      z-index: 999;
+    }
+    #toast.show { opacity: 1; }
+
+    /* ── Responsive ──────────────────────────────────────────── */
+    @media (max-width: 600px) {
+      .bubble { max-width: 88%; }
+      #send-btn { padding: 8px 12px; }
+    }
+  </style>
 </head>
 <body>
-	<h1>hello world!</h1>
+
+<div class="page-wrap">
+  <div class="chat-card">
+
+    <!-- Chat history -->
+    <div id="chat-history">
+      <!-- Initial bot greeting -->
+      <div class="msg-row bot">
+        <div class="bubble bot">Hi! How can I help you today?</div>
+      </div>
+    </div>
+
+    <!-- File badge (shown above input when PDF is ready) -->
+    <div style="padding: 0 16px;" id="badge-wrap">
+      <div id="file-badge">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+        </svg>
+        <span id="file-name">file.pdf</span>
+        <button id="clear-file" title="Remove file">&times;</button>
+      </div>
+    </div>
+
+    <!-- Input bar -->
+    <div class="input-bar">
+      <!-- Upload button -->
+      <button id="upload-btn" title="Upload PDF resume" type="button">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+      </button>
+      <input type="file" id="pdf-input" accept=".pdf" />
+
+      <!-- Text input -->
+      <input
+        type="text"
+        id="msg-input"
+        placeholder="Type a message..."
+        autocomplete="off"
+      />
+
+      <!-- Send -->
+      <button id="send-btn" type="button">Send</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Error toast -->
+<div id="toast"></div>
+
+<!-- Backend URL injected by Jinja2 from env var -->
+<script>
+  window.BACKEND_URL = "{{ backend_url }}";
+</script>
+
+<!-- PDF.js worker -->
+<script>
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+</script>
+
+<script>
+// ─── State ────────────────────────────────────────────────────
+let pdfText = null;   // Extracted PDF text, or null
+let busy    = false;  // Prevent double-sends
+
+// ─── DOM refs ─────────────────────────────────────────────────
+const history   = document.getElementById("chat-history");
+const msgInput  = document.getElementById("msg-input");
+const sendBtn   = document.getElementById("send-btn");
+const pdfInput  = document.getElementById("pdf-input");
+const uploadBtn = document.getElementById("upload-btn");
+const fileBadge = document.getElementById("file-badge");
+const fileName  = document.getElementById("file-name");
+const clearFile = document.getElementById("clear-file");
+const toast     = document.getElementById("toast");
+
+// ─── Toast helper ─────────────────────────────────────────────
+function showToast(msg, duration = 4000) {
+  toast.textContent = msg;
+  toast.classList.add("show");
+  setTimeout(() => toast.classList.remove("show"), duration);
+}
+
+// ─── Scroll to bottom ─────────────────────────────────────────
+function scrollBottom() {
+  history.scrollTop = history.scrollHeight;
+}
+
+// ─── Append a message bubble ──────────────────────────────────
+function appendBubble(text, role) {
+  const row = document.createElement("div");
+  row.className = `msg-row ${role}`;
+  const bubble = document.createElement("div");
+  bubble.className = `bubble ${role}`;
+  bubble.textContent = text;
+  row.appendChild(bubble);
+  history.appendChild(row);
+  scrollBottom();
+  return row;
+}
+
+// ─── Typing indicator ─────────────────────────────────────────
+function showTyping() {
+  const row = document.createElement("div");
+  row.className = "msg-row bot";
+  row.id = "typing";
+  row.innerHTML = `
+    <div class="typing-indicator">
+      <span></span><span></span><span></span>
+    </div>`;
+  history.appendChild(row);
+  scrollBottom();
+}
+function hideTyping() {
+  const el = document.getElementById("typing");
+  if (el) el.remove();
+}
+
+// ─── Enable / disable inputs ──────────────────────────────────
+function setLoading(state) {
+  busy = state;
+  sendBtn.disabled = state;
+  msgInput.disabled = state;
+  uploadBtn.disabled = state;
+}
+
+// ─── Extract text from PDF using PDF.js ───────────────────────
+async function extractPDFText(file) {
+  const buffer = await file.arrayBuffer();
+  const pdf    = await pdfjsLib.getDocument({ data: buffer }).promise;
+  let text = "";
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page    = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map(item => item.str).join(" ") + "\n";
+  }
+  return text.trim();
+}
+
+// ─── PDF upload flow ──────────────────────────────────────────
+uploadBtn.addEventListener("click", () => pdfInput.click());
+
+pdfInput.addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  // Validate
+  if (file.type !== "application/pdf") {
+    showToast("Please upload a valid PDF file.");
+    pdfInput.value = "";
+    return;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    showToast("PDF must be under 10 MB.");
+    pdfInput.value = "";
+    return;
+  }
+
+  // Show badge while processing
+  fileName.textContent = file.name;
+  fileBadge.classList.add("visible");
+  fileName.textContent = `${file.name} (processing…)`;
+  setLoading(true);
+
+  try {
+    pdfText = await extractPDFText(file);
+    fileName.textContent = file.name;
+    setLoading(false);
+  } catch (err) {
+    showToast("Failed to read PDF. Is it a text-based PDF?");
+    pdfText = null;
+    fileBadge.classList.remove("visible");
+    pdfInput.value = "";
+    setLoading(false);
+  }
+});
+
+// Clear PDF
+clearFile.addEventListener("click", () => {
+  pdfText = null;
+  pdfInput.value = "";
+  fileBadge.classList.remove("visible");
+});
+
+// ─── Send message ─────────────────────────────────────────────
+async function sendMessage() {
+  if (busy) return;
+
+  const text = msgInput.value.trim();
+  if (!text && !pdfText) {
+    showToast("Type a message or upload a PDF first.");
+    return;
+  }
+
+  // Show user bubble
+  appendBubble(text || "(Resume uploaded)", "user");
+  msgInput.value = "";
+  setLoading(true);
+  showTyping();
+
+  // Build payload
+  const payload = {
+    message:     text,
+    pdf_content: pdfText || null,
+    timestamp:   new Date().toISOString(),
+  };
+
+  // Clear PDF after sending
+  pdfText = null;
+  pdfInput.value = "";
+  fileBadge.classList.remove("visible");
+
+  try {
+    const res = await fetch(`${window.BACKEND_URL}/api/chat`, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Server error ${res.status}`);
+    }
+
+    const data = await res.json();
+    hideTyping();
+    appendBubble(data.response || "No response received.", "bot");
+
+  } catch (err) {
+    hideTyping();
+    appendBubble("Sorry, I couldn't reach the server. Please try again.", "bot");
+    console.error("Chat error:", err);
+  } finally {
+    setLoading(false);
+    msgInput.focus();
+  }
+}
+
+// ─── Event listeners ──────────────────────────────────────────
+sendBtn.addEventListener("click", sendMessage);
+
+msgInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+</script>
+
+<!-- Bootstrap JS (for any Bootstrap components if needed later) -->
+<script
+  src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+  integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+  crossorigin="anonymous">
+</script>
+
 </body>
 </html>

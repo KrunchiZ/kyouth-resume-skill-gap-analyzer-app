@@ -344,72 +344,13 @@ const fileName  = document.getElementById("file-name");
 const clearFile = document.getElementById("clear-file");
 const toast     = document.getElementById("toast");
 
-// ─── Toast helper ─────────────────────────────────────────────
-function showToast(msg, duration = 4000) {
-  toast.textContent = msg;
-  toast.classList.add("show");
-  setTimeout(() => toast.classList.remove("show"), duration);
-}
 
-// ─── Scroll to bottom ─────────────────────────────────────────
-function scrollBottom() {
-  history.scrollTop = history.scrollHeight;
-}
+// ─── Event listeners ──────────────────────────────────────────
 
-// ─── Append a message bubble ──────────────────────────────────
-function appendBubble(text, role) {
-  const row = document.createElement("div");
-  row.className = `msg-row ${role}`;
-  const bubble = document.createElement("div");
-  bubble.className = `bubble ${role}`;
-  bubble.textContent = text;
-  row.appendChild(bubble);
-  history.appendChild(row);
-  scrollBottom();
-  return row;
-}
-
-// ─── Typing indicator ─────────────────────────────────────────
-function showTyping() {
-  const row = document.createElement("div");
-  row.className = "msg-row bot";
-  row.id = "typing";
-  row.innerHTML = `
-    <div class="typing-indicator">
-      <span></span><span></span><span></span>
-    </div>`;
-  history.appendChild(row);
-  scrollBottom();
-}
-function hideTyping() {
-  const el = document.getElementById("typing");
-  if (el) el.remove();
-}
-
-// ─── Enable / disable inputs ──────────────────────────────────
-function setLoading(state) {
-  busy = state;
-  sendBtn.disabled = state;
-  msgInput.disabled = state;
-  uploadBtn.disabled = state;
-}
-
-// ─── Extract text from PDF using PDF.js ───────────────────────
-async function extractPDFText(file) {
-  const buffer = await file.arrayBuffer();
-  const pdf    = await pdfjsLib.getDocument({ data: buffer }).promise;
-  let text = "";
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page    = await pdf.getPage(i);
-    const content = await page.getTextContent();
-    text += content.items.map(item => item.str).join(" ") + "\n";
-  }
-  return text.trim();
-}
-
-// ─── PDF upload flow ──────────────────────────────────────────
+// PDF Upload events
 uploadBtn.addEventListener("click", () => pdfInput.click());
 
+// Handle PDF selection
 pdfInput.addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file) return;
@@ -452,7 +393,30 @@ clearFile.addEventListener("click", () => {
   fileBadge.classList.remove("visible");
 });
 
-// ─── Send message ─────────────────────────────────────────────
+// Send message events
+sendBtn.addEventListener("click", sendMessage);
+
+msgInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+// Extract text from PDF using PDF.js
+async function extractPDFText(file) {
+  const buffer = await file.arrayBuffer();
+  const pdf    = await pdfjsLib.getDocument({ data: buffer }).promise;
+  let text = "";
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page    = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map(item => item.str).join(" ") + "\n";
+  }
+  return text.trim();
+}
+
+// Send message
 async function sendMessage() {
   if (busy) return;
 
@@ -506,15 +470,55 @@ async function sendMessage() {
   }
 }
 
-// ─── Event listeners ──────────────────────────────────────────
-sendBtn.addEventListener("click", sendMessage);
+// Toast helper
+function showToast(msg, duration = 4000) {
+  toast.textContent = msg;
+  toast.classList.add("show");
+  setTimeout(() => toast.classList.remove("show"), duration);
+}
 
-msgInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
-  }
-});
+// Scroll to bottom
+function scrollBottom() {
+  history.scrollTop = history.scrollHeight;
+}
+
+// Append a message bubble
+function appendBubble(text, role) {
+  const row = document.createElement("div");
+  row.className = `msg-row ${role}`;
+  const bubble = document.createElement("div");
+  bubble.className = `bubble ${role}`;
+  bubble.textContent = text;
+  row.appendChild(bubble);
+  history.appendChild(row);
+  scrollBottom();
+  return row;
+}
+
+// Typing indicator
+function showTyping() {
+  const row = document.createElement("div");
+  row.className = "msg-row bot";
+  row.id = "typing";
+  row.innerHTML = `
+    <div class="typing-indicator">
+      <span></span><span></span><span></span>
+    </div>`;
+  history.appendChild(row);
+  scrollBottom();
+}
+function hideTyping() {
+  const el = document.getElementById("typing");
+  if (el) el.remove();
+}
+
+// Enable / disable inputs
+function setLoading(state) {
+  busy = state;
+  sendBtn.disabled = state;
+  msgInput.disabled = state;
+  uploadBtn.disabled = state;
+}
 </script>
 
 <!-- Bootstrap JS (for any Bootstrap components if needed later) -->

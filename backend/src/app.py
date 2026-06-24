@@ -9,57 +9,69 @@ from week2 import find_skill_gaps_from_text
 
 load_dotenv()
 
+DB_PATH = Path(os.getenv("DB_PATH", "week2/data/jobs.db"))
+
 app = FastAPI(title="Resume Helper Backend")
 
 # Allow frontend origin
 app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],          # Tighten in production
-    allow_methods=["GET", "POST"],
-    allow_headers=["*"],
+	CORSMiddleware,
+	allow_origins=["*"],          # Tighten in production
+	allow_methods=["GET", "POST"],
+	allow_headers=["*"],
 )
 
 
 # ── Request / Response models ──────────────────────────────────
 class ChatRequest(BaseModel):
-    message: str
-    pdf_content: Optional[str] = None
-    timestamp: str
+	message: str
+	pdf_content: Optional[str] = None
+	timestamp: str
 
 
 class ChatResponse(BaseModel):
-    response: str
-    skill_gaps: list[str] = []
+	response: str
+	skill_gaps: list[str] = []
 
 
 # ── Routes ────────────────────────────────────────────────────
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
+	return {"status": "ok"}
 
 
 @app.post("/api/chat", response_model=ChatResponse)
 async def chat(body: ChatRequest) -> ChatResponse:
-    """
-    Main chat endpoint.
+	if body.pdf_content:
+		# Run skill-gap analysis
+		result = find_skill_gaps_from_text(body.pdf_content, DB_PATH)
+		gaps = result.gaps
 
-    TODO (Day 3):
-      1. If body.pdf_content is set, parse the resume text.
-      2. Run Week 2 skill-gap analysis against the SQLite DB from Week 1.
-      3. Use an LLM (or rule-based logic) to produce a natural-language reply.
-      4. Return the reply + skill gap list.
-    """
-    # ── Placeholder until Day 3 ───────────────────────────────
-    if body.pdf_content:
-        reply = (
-            "I've received your resume! "
-            "Full skill-gap analysis will be wired up on Day 3. "
-            "Stay tuned."
-        )
-    else:
-        reply = (
-            f"You said: \"{body.message}\". "
-            "The backend is running — full AI responses coming on Day 3!"
-        )
+		# Build a natural-language reply
+		if gaps:
+			reply = (
+				f"I've analyzed your resume against {len(gaps)} job listings. "
+				f"Here are the key skill gaps I identified:\n\n"
+			)
+			# Group gaps by category (or just list them)
+			for i, gap in enumerate(gaps, 1):
+				reply += f"{i}. {gap}\n"
+			reply += "\nTo improve your competitiveness, consider learning or gaining " \
+					 f"experience in these areas: {', '.join(gaps[:5])}."
+		else:
+			reply = (
+				"Great news! Your skills align well with the job listings in our database. "
+				"I didn't identify any significant skill gaps."
+			)
 
-    return ChatResponse(response=reply, skill_gaps=[])
+		# If the user also sent a text message, incorporate it
+		if body.message:
+			reply = f"{body.message}\n\n{reply}"
+
+		return ChatResponse(response=reply, skill_gaps=gaps)
+
+	# Fallback for text-only messages
+	return ChatResponse(
+		response=f"You said: \"{body.message}\". Upload your resume to get a skill-gap analysis!",
+		skill_gaps=[],
+	)

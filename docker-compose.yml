@@ -22,7 +22,6 @@ services:
     container_name: resume-frontend
     env_file: .env
     environment:
-      # Tell the frontend JS where the backend lives (public URL seen by browser)
       BACKEND_URL: ${BACKEND_URL:-http://localhost:8001}
     ports:
       - "8000:8000"

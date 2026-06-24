@@ -463,7 +463,7 @@ async function sendMessage() {
   }
 
   // Show user bubble
-  appendBubble(text || "(Resume uploaded)", "user");
+  appendBubble(text || `<${fileName.textContent}> uploaded`, "user");
   msgInput.value = "";
   setLoading(true);
   showTyping();

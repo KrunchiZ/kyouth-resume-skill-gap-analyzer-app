@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8001")
+BACKEND_URL = os.getenv("BACKEND_URL", "http://backend:8001")
 
 app = FastAPI(title="Resume Helper Frontend")
 

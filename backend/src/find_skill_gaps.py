@@ -139,29 +139,26 @@ def find_skill_gaps(input_file_path: str, db_url: str) -> SkillGapResult:
 		return SkillGapResult(gaps=[])
 
 
-def find_skill_gaps_from_text(resume_text: str, db_path: str) -> SkillGapResult:
+async def find_skill_gaps_from_text(resume_text: str, db_path: str) -> SkillGapResult:
 	# Same as find_skill_gaps but accepts raw resume text (no temp file needed).
 	try:
-		async def _from_text():
-			async with Client(PythonStdioTransport("/app/src/db_server.py", args=[db_path])) as mcp:
-				batch_size, retry_delay = await compute_batch_params(mcp)
-				resume_skills = _normalize_skills(_call_llm(resume_text, retry_delay))
-				if not resume_skills:
-					raise ValueError("Resume extraction failed")
-				gaps_set: set[str] = set()
-				last_sid = 0
-				i = 0
-				while True:
-					tech_stack, last_sid = await _fetch_db_skills(mcp, batch_size, last_sid)
-					if not tech_stack:
-						break
-					gaps_set = gaps_set.union(tech_stack - resume_skills)
-					i += 1
-			if i == 0:
-				raise ValueError("No tagged jobs found in database")
-			return gaps_set
-
-		return SkillGapResult(gaps=sorted(asyncio.run(_from_text())))
+		async with Client(PythonStdioTransport("/app/src/db_server.py", args=[db_path])) as mcp:
+			batch_size, retry_delay = await compute_batch_params(mcp)
+			resume_skills = _normalize_skills(_call_llm(resume_text, retry_delay))
+			if not resume_skills:
+				raise ValueError("Resume extraction failed")
+			gaps_set: set[str] = set()
+			last_sid = 0
+			i = 0
+			while True:
+				tech_stack, last_sid = await _fetch_db_skills(mcp, batch_size, last_sid)
+				if not tech_stack:
+					break
+				gaps_set = gaps_set.union(tech_stack - resume_skills)
+				i += 1
+		if i == 0:
+			raise ValueError("No tagged jobs found in database")
+		return SkillGapResult(gaps=sorted(gaps_set))
 
 	except Exception as code:
 		logging.error(f"{code}")

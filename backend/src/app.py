@@ -1,5 +1,7 @@
 import os
+import asyncio
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from fastapi import FastAPI
 from pydantic import BaseModel
@@ -63,7 +65,7 @@ async def chat(body: ChatRequest) -> ChatResponse:
 
     if is_skill_gap_query and body.pdf_content:
         # ── Skill gap analysis path ─────────────────────────────
-        result = find_skill_gaps_from_text(body.pdf_content, str(DB_PATH))
+        result = await find_skill_gaps_from_text(body.pdf_content, str(DB_PATH))
         gaps = result.gaps
 
         # Build a prompt that gives the LLM the gaps + user's question
@@ -74,10 +76,11 @@ async def chat(body: ChatRequest) -> ChatResponse:
             f"Skill gap analysis results:\n"
             f"Total gaps found: {len(gaps)}\n"
             f"Gaps: {gap_summary}\n\n"
-            f"Provide a helpful, natural response addressing the user's question\n"
-            f"and summarizing the skill gaps in a constructive way."
+            f"Using bullet points and separate paragraphs where appropriate, "
+            f"provide a response addressing the user's question in a constructive way."
         )
         llm_reply = prompt_model(OLLAMA_MODELS[0], prompt, temperature=0.7, top_p=0.9)
+        llm_reply += f"\nTotal gaps: {len(gaps)}\nGaps: {gap_summary}\n"
 
         if llm_reply:
             return ChatResponse(response=llm_reply, skill_gaps=gaps)

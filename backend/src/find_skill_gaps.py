@@ -28,10 +28,11 @@ class SkillGapResult(BaseModel):
 # ---------------------------------------------------------------------------
 
 DEBUG = False
-LOCAL_MODEL = False
+LOCAL_MODEL = True
 
-RESUME_PATH = Path("data/resume_d3.txt") if DEBUG else Path("data/resume_d3_eval.txt")
-DB_PATH = Path("data/jobs_d1.db") if DEBUG else Path("data/jobs_d3_eval.db")
+BASE = Path(__file__).parent / "data"
+RESUME_PATH = BASE / "resume_d3.txt" if DEBUG else BASE / "resume_d3_eval.txt"
+DB_PATH = BASE / "jobs_d1.db" if DEBUG else BASE / "jobs.db"
 
 # Skills that contain a literal slash and must NOT be split
 SLASH_EXCEPTIONS: frozenset[str] = frozenset({"a/b testing", "ci/cd"})
@@ -113,7 +114,7 @@ def main():
 def find_skill_gaps(input_file_path: str, db_url: str) -> SkillGapResult:
 	try:
 		async def _find_skill_gaps(input_file_path: str, db_url: str) -> set[str]:
-			async with Client(PythonStdioTransport("db_server.py", args=[db_url])) as mcp:
+			async with Client(PythonStdioTransport("/app/src/db_server.py", args=[db_url])) as mcp:
 				batch_size, retry_delay = await compute_batch_params(mcp)
 				resume_skills = _extract_resume_skills(Path(input_file_path), retry_delay)
 				if not resume_skills:
@@ -142,7 +143,7 @@ def find_skill_gaps_from_text(resume_text: str, db_path: str) -> SkillGapResult:
 	# Same as find_skill_gaps but accepts raw resume text (no temp file needed).
 	try:
 		async def _from_text():
-			async with Client(PythonStdioTransport("db_server.py", args=[db_path])) as mcp:
+			async with Client(PythonStdioTransport("/app/src/db_server.py", args=[db_path])) as mcp:
 				batch_size, retry_delay = await compute_batch_params(mcp)
 				resume_skills = _normalize_skills(_call_llm(resume_text, retry_delay))
 				if not resume_skills:

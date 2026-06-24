@@ -38,8 +38,9 @@ GEMINI_MODELS = [
 ]
 
 MODEL = OLLAMA_MODELS[0] if LOCAL_MODEL else GEMINI_MODELS[0]
-DB_PATH = Path("data/jobs_d1.db") if DEBUG else Path("data/jobs.db")
-RATE_LIMITS_TXT = Path("./rate_limits.txt")
+BASE = Path("/app/data")
+DB_PATH = BASE / "jobs_d1.db" if DEBUG else BASE / "jobs.db"
+RATE_LIMITS_TXT = Path(__file__).parent / "rate_limits.txt"
 
 TEMPERATURE = 0.95
 TOP_P = 0.95
@@ -99,7 +100,7 @@ def tag_data(db_url: str):
 
 
 async def _tag_data_async(db_url: str):
-	db_server = PythonStdioTransport("db_server.py", args=[db_url])
+	db_server = PythonStdioTransport("/app/src/db_server.py", args=[db_url])
 	async with Client(db_server) as mcp:
 		b_idx = 0
 		while True:

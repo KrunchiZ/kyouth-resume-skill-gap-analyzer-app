@@ -5,11 +5,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
 from dotenv import load_dotenv
-from week2 import find_skill_gaps_from_text
+from find_skill_gaps import find_skill_gaps_from_text
 
 load_dotenv()
 
-DB_PATH = Path(os.getenv("DB_PATH", "week2/data/jobs.db"))
+DB_PATH = Path(os.getenv("DB_PATH", "/app/data/jobs.db"))
 
 app = FastAPI(title="Resume Helper Backend")
 

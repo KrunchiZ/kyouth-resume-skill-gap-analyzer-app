@@ -9,13 +9,14 @@ import sys
 from pathlib import Path
 from fastmcp import FastMCP
 
-DB_PATH: str = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("data/jobs_d1.db")
+DB_PATH: str = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("/app/data/jobs.db")
 
-SQL_COUNT_AVG_DESC_LEN  = Path("./sql/count_avg_desc_length.sql")
-SQL_FETCH_UNTAGGED      = Path("./sql/fetch_untagged.sql")
-SQL_UPDATE_TECH_STACK   = Path("./sql/update_tech_stack.sql")
-SQL_FETCH_TAGGED_JOBS = Path("./sql/fetch_tagged_jobs.sql")
-SQL_COUNT_JOBS = Path("./sql/count_jobs.sql")
+BASE = Path("/app/sql")
+SQL_COUNT_AVG_DESC_LEN	= BASE / "count_avg_desc_length.sql"
+SQL_FETCH_UNTAGGED		= BASE / "fetch_untagged.sql"
+SQL_UPDATE_TECH_STACK	= BASE / "update_tech_stack.sql"
+SQL_FETCH_TAGGED_JOBS	= BASE / "fetch_tagged_jobs.sql"
+SQL_COUNT_JOBS			= BASE / "count_jobs.sql"
 
 # MCP server
 mcp = FastMCP("SQLite-Service")

@@ -27,6 +27,8 @@ OLLAMA_MODELS = [
 	"gemma3:1b",
 ]
 
+GEMINI_MODELS = "gemini-3.1-flash-lite"
+
 SYSTEM_PROMPT = """\
 You are a helpful career assistant for a resume skill-gap analyzer app. \
 The user has uploaded a resume (provided below) and may ask questions about it. \
@@ -74,12 +76,11 @@ async def chat(body: ChatRequest) -> ChatResponse:
             f"{SYSTEM_PROMPT}\n\n"
             f"The user has uploaded a resume and asked: \"{body.message}\"\n\n"
             f"Skill gap analysis results:\n"
-            f"Total gaps found: {len(gaps)}\n"
             f"Gaps: {gap_summary}\n\n"
-            f"Using bullet points and separate paragraphs where appropriate, "
-            f"provide a response addressing the user's question in a constructive way."
+            f"Using bullet points and paragraphs, provide a response addressing "
+            f"the user's question in a constructive way."
         )
-        llm_reply = prompt_model(OLLAMA_MODELS[0], prompt, temperature=0.7, top_p=0.9)
+        llm_reply = prompt_model(GEMINI_MODELS, prompt)
         llm_reply += f"\nTotal gaps: {len(gaps)}\nGaps: {gap_summary}\n"
 
         if llm_reply:
@@ -93,7 +94,7 @@ async def chat(body: ChatRequest) -> ChatResponse:
     elif body.pdf_content:
         # ── General chat with resume context ────────────────────
         prompt = f"{SYSTEM_PROMPT}\n\n<Resume>\n{body.pdf_content}\n</Resume>\n<User> {body.message}\n</User>"
-        llm_reply = prompt_model(OLLAMA_MODELS[0], prompt, temperature=0.7, top_p=0.9)
+        llm_reply = prompt_model(GEMINI_MODELS, prompt)
 
         if llm_reply:
             return ChatResponse(response=llm_reply, skill_gaps=[])
@@ -106,7 +107,7 @@ async def chat(body: ChatRequest) -> ChatResponse:
     else:
         # ── General chat, no resume ─────────────────────────────
         prompt = f"{SYSTEM_PROMPT}\n\n<User> {body.message}\n</User>"
-        llm_reply = prompt_model(OLLAMA_MODELS[0], prompt, temperature=0.7, top_p=0.9)
+        llm_reply = prompt_model(GEMINI_MODELS, prompt)
 
         if llm_reply:
             return ChatResponse(response=llm_reply, skill_gaps=[])

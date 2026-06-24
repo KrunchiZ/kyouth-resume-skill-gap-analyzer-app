@@ -13,7 +13,6 @@ RUN uv sync --frozen --no-install-project
 
 # Copy sql and data files
 COPY sql/ ./sql/
-COPY data/ ./data/
 
 # Copy source code
 COPY src/ ./src/

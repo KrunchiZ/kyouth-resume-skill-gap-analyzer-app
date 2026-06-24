@@ -16,7 +16,7 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 
 load_dotenv()
 gemini_client = genai.Client()
-ollama_client = ollama.Client()
+ollama_client = ollama.Client(host="http://ollama:11434")
 
 OLLAMA_MODELS = {
 	"llama3.1",

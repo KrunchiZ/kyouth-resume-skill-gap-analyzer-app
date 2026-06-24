@@ -445,7 +445,7 @@ async function sendMessage() {
   fileBadge.classList.remove("visible");
 
   try {
-    const res = await fetch(`${window.BACKEND_URL}/api/chat`, {
+    const res = await fetch('/api/chat', {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
       body:    JSON.stringify(payload),

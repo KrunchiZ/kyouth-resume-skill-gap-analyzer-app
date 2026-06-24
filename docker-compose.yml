@@ -12,6 +12,8 @@ services:
     networks:
       - app-net
     restart: unless-stopped
+    depends_on:
+      - ollama
 
   frontend:
     build:
@@ -28,7 +30,21 @@ services:
       - backend
     networks:
       - app-net
+    volumes:
+      - ./backend/data/:/app/data:ro
     restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: resume-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ${HOME:-/home/kchiang}/.ollama:/root/.ollama
+    networks:
+      - app-net
+    restart: unless-stopped
+
 
 networks:
   app-net:

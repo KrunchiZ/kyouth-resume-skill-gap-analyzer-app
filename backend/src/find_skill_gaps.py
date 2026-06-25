@@ -33,9 +33,9 @@ load_dotenv()
 DEBUG = False
 LOCAL_MODEL = True
 
-BASE = os.getenv("DATA_DIR", "/app/data")
+BASE = Path(os.getenv("DATA_DIR", "/app/data"))
 RESUME_PATH = BASE / "resume_d3.txt" if DEBUG else BASE / "resume_d3_eval.txt"
-DB_NAME = os.getenv("DB_NAME", "jobs.db")
+DB_NAME = Path(os.getenv("DB_NAME", "jobs.db"))
 DB_PATH = BASE / DB_NAME
 
 # Skills that contain a literal slash and must NOT be split

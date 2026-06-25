@@ -17,7 +17,7 @@ BASE = Path(os.getenv("DATA_DIR", "/app/data"))
 DB_NAME = Path(os.getenv("DB_NAME", "jobs.db"))
 DB_PATH = Path(sys.argv[1]) if len(sys.argv) > 1 else BASE / DB_NAME
 
-BASE = Path(os.getenv("SQL_DIR", "/app/sql"))
+BASE = Path("/app/sql")
 SQL_COUNT_AVG_DESC_LEN	= BASE / "count_avg_desc_length.sql"
 SQL_FETCH_UNTAGGED		= BASE / "fetch_untagged.sql"
 SQL_UPDATE_TECH_STACK	= BASE / "update_tech_stack.sql"

@@ -2,8 +2,6 @@
 
 A full-stack chat application that analyzes a user's resume against a database of job listings to identify skill gaps, powered by AI models. Built as Week 3 of a 3-week project spanning ETL pipelines, AI integration, and containerization.
 
----
-
 ## Project Overview
 
 This application enables users to upload a PDF resume and receive personalized career advice through a conversational chat interface. The system:
@@ -15,15 +13,15 @@ This application enables users to upload a PDF resume and receive personalized c
 
 The architecture consists of three containerized services: a **frontend** (chat UI + reverse proxy), a **backend** (API + AI logic), and an **Ollama** instance (local LLM serving).
 
----
+<br>
 
 ## Setup Instructions
 
 ### Prerequisites
 
-- **Docker** and **Docker Compose** (v2) installed and running
-- **Ollama model** — at least one model must be pulled before first use (e.g., `llama3.1`, `gemma3:1b`, `gemini-3.1-flash-lite` via API key)
-- **GPU (optional)** — for faster local inference, install the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) and uncomment the GPU reservation in `docker-compose.yml`
+- **([Docker Desktop](https://www.docker.com/products/docker-desktop/) for Windows/MacOS || [Docker Engine](https://docs.docker.com/engine/install) for Linux)** installed and running 
+- [**Ollama model**](https://ollama.com/) — at least one model must be pulled before first use (e.g. `gemma3:1b`)
+- [**Gemini model**](https://aistudio.google.com/welcome) — `gemini-3.1-flash-lite` and `gemini-2.5-flash-lite` via API key
 
 ### Quick Start (Docker Compose)
 
@@ -46,14 +44,17 @@ The architecture consists of three containerized services: a **frontend** (chat 
    | Variable | Description | Example |
    |----------|-------------|---------|
    | `BACKEND_URL` | Internal Docker network URL for backend | `http://backend:8001` |
-   | `GEMINI_API_KEY` | API key for Gemini models (used for chat responses) | Leave blank if using only Ollama |
+   | `GEMINI_API_KEY` | API key for Gemini models (used for chat responses) | Acquire from [Google AI Studio](https://aistudio.google.com/welcome) |
+   | `DATA_DIR` | Internal Docker data/ directory containing the database | `/app/data` |
+   | `DB_NAME` | Database file name | `jobs_d1.db` |
+   | `OLLAMA_MODEL_PATH` | Path to local host directory storing Ollama models | `/usr/share/ollama` or `C:\Users\<username>\` or `~`(home) |
 
    > **Security note:** Never commit your `.env` file. It is listed in `.gitignore`. The `.env.example` file contains placeholder values.
 
 3. **Pull an Ollama model** (run once before starting):
 
    ```bash
-   docker compose run --rm ollama ollama pull llama3.1
+   docker compose run --rm ollama ollama pull gemma3:1b
    ```
 
    Alternatively, the backend will auto-pull when it first requests the model.
@@ -101,7 +102,7 @@ If you prefer to run services locally:
    uv run uvicorn src.main:app --host 0.0.0.0 --port 8000
    ```
 
----
+<br>
 
 ## Usage
 
@@ -115,7 +116,7 @@ docker compose up --build -d
 
 - **Frontend**: [`http://localhost:8000`](http://localhost:8000)
 - **Backend API**: `http://localhost:8001` (accessible internally by the frontend)
-- **Health check**: `http://localhost:8001/health` → `{"status": "ok"}`
+- **Health check**: `<http://localhost:8001>/health` → `{"status": "ok"}`
 
 ### Interacting with the Chatbot
 
@@ -142,14 +143,20 @@ docker compose up --build -d
 ### Stopping and Cleaning Up
 
 ```bash
-# Stop all containers
+# Stop all containers without removing
+docker compose stop
+
+# Stop and remove all containers
 docker compose down
 
-# Stop and remove volumes (deletes Ollama models)
+# Stop and remove mounted volumes (ignores host path)
 docker compose down -v
+
+# List all containers
+docker ps -a
 ```
 
----
+<br>
 
 ## API / Function Reference
 
@@ -291,7 +298,7 @@ Browser (host) ──port 8000──▶ resume-frontend ──http://backend:800
 - The backend connects to Ollama at `http://ollama:11434` (the Ollama container's service name)
 - The backend spawns `db_server.py` as a subprocess via MCP stdio transport for SQLite queries
 
----
+<br>
 
 ## Data / Assumptions
 
@@ -345,7 +352,7 @@ Response flows back through proxy to browser
 - **No conversation history**: Each request is stateless. The LLM only sees the current message + resume text, not previous exchanges.
 - **Model selection**: Skill gap classification uses Gemma 3:1B (fast, low-cost). Resume chat uses Gemini 3.1 Flash Lite. General chat without resume uses Gemma 3:1B.
 
----
+<br>
 
 ## Testing
 
@@ -404,7 +411,7 @@ docker exec resume-backend curl -s http://ollama:11434/api/tags
 docker compose logs -f
 ```
 
----
+<br>
 
 ## Limitations
 
@@ -436,7 +443,7 @@ docker compose logs -f
 - No multi-language support
 - No deployment beyond local Docker Compose
 
----
+<br>
 
 ## Architecture Reflection
 
@@ -448,7 +455,7 @@ docker compose logs -f
 
 **MCP (Model Context Protocol) for database access**: The backend communicates with SQLite through `db_server.py`, a FastMCP server exposing SQL operations as tools. This decouples database logic from the AI pipeline and allows the same server to serve multiple consumers (skill gap analysis, tag data).
 
-**Local LLM via Ollama**: Running Ollama in its own container provides free, unrestricted model inference without API costs or rate limits. Models are persisted in a named volume (`${HOME}/.ollama`), surviving container rebuilds.
+**Local LLM via Ollama**: Running Ollama in its own container provides free, unrestricted model inference without API costs or rate limits. Models are persisted in a named volume (`${OLLAMA_MODEL_PATH}/.ollama`), surviving container rebuilds.
 
 ### Trade-offs
 

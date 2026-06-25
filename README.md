@@ -72,7 +72,7 @@ The architecture consists of three containerized services: a **frontend** (chat 
    | `gemini_api_key.txt` | API key for Gemini models (used for chat responses) | Acquire from [Google AI Studio](https://aistudio.google.com/welcome) |
    | `ollama_model_path.txt` | Path to local host directory storing Ollama models | `/usr/share/ollama` or `C:\Users\<username>\` or `~`(home) |
 
-   > **Security note:** Never commit your `.env` file. It is listed in `.gitignore`. The `.env.example` file contains placeholder values.
+   > **Security note:** Never commit your `secrets/` file. It is listed in `.gitignore`.
 
 4. **Pull an Ollama model** (run once before starting):
 

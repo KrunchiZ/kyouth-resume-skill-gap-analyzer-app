@@ -18,7 +18,9 @@ logging.basicConfig(
     datefmt="%m/%d/%y %H:%M:%S",
 )
 
-DB_PATH = Path(os.getenv("DB_PATH", "/app/data/jobs.db"))
+DATA_DIR = Path(os.getenv("DATA_DIR", "/app/data"))
+DB_NAME = Path(os.getenv("DB_NAME", "jobs_d1.db"))
+DB_PATH = DATA_DIR / DB_NAME
 
 OLLAMA_MODELS = [
 	"llama3.1",

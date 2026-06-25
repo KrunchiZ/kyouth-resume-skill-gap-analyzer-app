@@ -81,13 +81,7 @@ async def chat(body: ChatRequest) -> ChatResponse:
         llm_reply = (f"Total gaps = {len(gaps)}\nGaps = {gaps}\n\n"
             + prompt_model(GEMINI_MODELS, prompt))
 
-        if llm_reply:
-            return ChatResponse(response=llm_reply, skill_gaps=gaps)
-        else:
-            return ChatResponse(
-                response="I'm sorry, I couldn't generate a response right now. Please try again.",
-                skill_gaps=gaps,
-            )
+        return ChatResponse(response=llm_reply, skill_gaps=gaps)
 
     elif body.pdf_content:
         # ── General chat with resume context ────────────────────

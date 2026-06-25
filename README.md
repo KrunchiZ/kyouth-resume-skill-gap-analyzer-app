@@ -19,16 +19,20 @@ The architecture consists of three containerized services: a **frontend** (chat 
 
 ### Prerequisites
 
-- **([Docker Desktop](https://www.docker.com/products/docker-desktop/) for Windows/MacOS || [Docker Engine](https://docs.docker.com/engine/install) for Linux)** installed and running 
-- [**Ollama model**](https://ollama.com/) — at least one model must be pulled before first use (e.g. `gemma3:1b`)
-- [**Gemini model**](https://aistudio.google.com/welcome) — `gemini-3.1-flash-lite` and `gemini-2.5-flash-lite` via API key
+- **Docker** installed and running
+  - **[Docker Desktop](https://www.docker.com/products/docker-desktop/) for Windows / MacOS**
+  - **[Docker Engine](https://docs.docker.com/engine/install) for Linux** 
+- [**Ollama**](https://ollama.com/) — at least one model must be pulled before first use (e.g. `gemma3:1b`)
+- [**Gemini API**](https://aistudio.google.com/welcome) — `gemini-3.1-flash-lite` and `gemini-2.5-flash-lite` via API key
+
+<br>
 
 ### Quick Start (Docker Compose)
 
-1. **Clone and navigate** to the project directory:
+1. **Git clone and navigate** to the project directory:
 
    ```bash
-   cd week3
+   cd [project_directory]
    ```
 
 2. **Configure environment variables**:
@@ -43,15 +47,34 @@ The architecture consists of three containerized services: a **frontend** (chat 
 
    | Variable | Description | Example |
    |----------|-------------|---------|
-   | `BACKEND_URL` | Internal Docker network URL for backend | `http://backend:8001` |
-   | `GEMINI_API_KEY` | API key for Gemini models (used for chat responses) | Acquire from [Google AI Studio](https://aistudio.google.com/welcome) |
    | `DATA_DIR` | Internal Docker data/ directory containing the database | `/app/data` |
    | `DB_NAME` | Database file name | `jobs_d1.db` |
-   | `OLLAMA_MODEL_PATH` | Path to local host directory storing Ollama models | `/usr/share/ollama` or `C:\Users\<username>\` or `~`(home) |
 
    > **Security note:** Never commit your `.env` file. It is listed in `.gitignore`. The `.env.example` file contains placeholder values.
 
-3. **Pull an Ollama model** (run once before starting):
+3. **Create Docker Compose secret files**:
+
+   Create a directory `Secrets` in the root of the project repository (Same location as docker-compose.yml).\
+   Then, create these three secret files in the `secrets` directory:
+
+   ```bash
+   mkdir secrets
+   touch secrets/backend_url.txt
+   touch secrets/gemini_api_key.txt
+   touch secrets/ollama_model_path.txt
+   ```
+
+   Put the secret values in each file respectively.
+
+   | File Name | Description | Example |
+   |-----------|-------------|---------|
+   | `backend_url.txt` | Internal Docker network URL for backend | `http://backend:8001` |
+   | `gemini_api_key.txt` | API key for Gemini models (used for chat responses) | Acquire from [Google AI Studio](https://aistudio.google.com/welcome) |
+   | `ollama_model_path.txt` | Path to local host directory storing Ollama models | `/usr/share/ollama` or `C:\Users\<username>\` or `~`(home) |
+
+   > **Security note:** Never commit your `.env` file. It is listed in `.gitignore`. The `.env.example` file contains placeholder values.
+
+4. **Pull an Ollama model** (run once before starting):
 
    ```bash
    docker compose run --rm ollama ollama pull gemma3:1b
@@ -59,7 +82,7 @@ The architecture consists of three containerized services: a **frontend** (chat 
 
    Alternatively, the backend will auto-pull when it first requests the model.
 
-4. **Build and start**:
+5. **Build and start**:
 
    ```bash
    docker compose up --build -d
@@ -67,9 +90,11 @@ The architecture consists of three containerized services: a **frontend** (chat 
 
    This builds the frontend and backend images, starts three containers (`resume-frontend`, `resume-backend`, `resume-ollama`), and connects them on a shared `app-net` network.
 
-5. **Access the application**:
+6. **Access the application**:
 
    Open your browser to [`http://localhost:8000`](http://localhost:8000).
+
+<br>
 
 ### Manual Setup (without Docker)
 
@@ -209,6 +234,8 @@ Main chat endpoint. Accepts a user message and optionally a resume, routes to th
   3. If resume + general question → feeds resume + message to Gemini for conversational response.
   4. If no resume → uses Gemma 3:1B for a general response (requests a resume politely).
 
+<br>
+
 ### Backend Core Functions
 
 #### `find_skill_gaps_from_text(resume_text, db_path)` — `find_skill_gaps.py:142`
@@ -241,6 +268,8 @@ Exposes SQLite operations as MCP tools:
 | `fetch_untagged_jobs(batch_size)` | `batch_size: int` | Returns untagged jobs for processing |
 | `fetch_tagged_jobs(batch_size, last_sid)` | `batch_size: int`, `last_sid: int` | Returns tagged jobs in pagination order |
 | `update_tech_stack(source_id, tech_stack)` | `source_id: str`, `tech_stack: str` | Writes extracted tech stack to a job |
+
+<br>
 
 ### Frontend Functions
 
@@ -281,6 +310,8 @@ The frontend's reverse proxy route:
 2. Forwards the request to the backend at `$BACKEND_URL/api/chat` via `httpx`
 3. Deserializes the response into a `ChatResponse` Pydantic model
 4. Returns it to the frontend
+
+<br>
 
 ### Docker Network Communication
 
@@ -325,6 +356,8 @@ If general:
 Response flows back through proxy to browser
 ```
 
+<br>
+
 ### Data Structures
 
 **SQLite database** (`jobs.db`):
@@ -340,6 +373,8 @@ Response flows back through proxy to browser
 | `content_hash` | TEXT | SHA256 hash for deduplication |
 
 **ChatRequest / ChatResponse** — Shared between frontend and backend via Pydantic models, serialized to JSON over HTTP.
+
+<br>
 
 ### Assumptions and Constraints
 
@@ -388,6 +423,8 @@ Expected response:
 }
 ```
 
+<br>
+
 ### Frontend Testing
 
 1. Navigate to `http://localhost:8000`
@@ -395,6 +432,8 @@ Expected response:
 3. **Send a message**: Type "Summarize my resume" and press Enter
 4. **Trigger skill gap analysis**: Type "What skills am I missing?" after uploading a resume
 5. **Test rate limiting**: Send rapid requests with a PDF attached — you should see a 429 error toast after exceeding the limit
+
+<br>
 
 ### Docker Network Testing
 

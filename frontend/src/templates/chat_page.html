@@ -429,6 +429,11 @@ async function sendMessage() {
 
   // Show user bubble
   appendBubble(text || `<${fileName.textContent}> uploaded`, "user");
+
+  // Show file badge in chat history when a PDF is uploaded
+  if (pdfText && file.name) {
+    appendFileBadge(file.name, "user");
+  }
   msgInput.value = "";
   setLoading(true);
   showTyping();
@@ -494,6 +499,30 @@ function appendBubble(text, role) {
   history.appendChild(row);
   scrollBottom();
   return row;
+}
+
+// Append a file badge in the chat history
+function appendFileBadge(filename, role) {
+  const row = document.createElement("div");
+  row.className = `msg-row ${role}`;
+  const badge = document.createElement("div");
+  badge.className = `bubble ${role}`;
+  badge.style.fontSize = ".78rem";
+  badge.style.display = "inline-flex";
+  badge.style.alignItems = "center";
+  badge.style.gap = "6px";
+  badge.style.background = role === "user" ? "var(--purple)" : "#f0eeff";
+  badge.style.color = role === "user" ? "#fff" : "var(--purple)";
+  badge.style.border = role === "user" ? "none" : "1px solid #c9c4f5";
+  badge.innerHTML = `
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+    </svg>
+    ${filename}`;
+  row.appendChild(badge);
+  history.appendChild(row);
+  scrollBottom();
 }
 
 // Typing indicator

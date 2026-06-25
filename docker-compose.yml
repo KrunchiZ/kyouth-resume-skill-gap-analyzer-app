@@ -35,7 +35,7 @@ services:
     ports:
       - "11434:11434"
     volumes:
-      - ${OLLAMA_MODEL_PATH:-/root}/.ollama:/root/.ollama
+      - ${OLLAMA_MODEL_PATH:-/usr/share/ollama}/.ollama:/root/.ollama
     networks:
       - app-net
     restart: unless-stopped

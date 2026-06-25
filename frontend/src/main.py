@@ -118,7 +118,8 @@ async def get_chat_page(request: Request):
 @app.post("/api/chat", response_model=ChatResponse)
 async def proxy_chat(request: Request, body: ChatRequest) -> ChatResponse:
 	# Enforce rate limit before forwarding
-	_check_rate_limit(request.client.host if request.client else "unknown")
+	if body.pdf_content:
+		_check_rate_limit(request.client.host if request.client else "unknown")
 
 	async with httpx.AsyncClient() as client:
 		resp = await client.post(

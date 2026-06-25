@@ -318,11 +318,6 @@
 <!-- Error toast -->
 <div id="toast"></div>
 
-<!-- Backend URL injected by Jinja2 from env var -->
-<script>
-  window.BACKEND_URL = "{{ backend_url }}";
-</script>
-
 <!-- PDF.js worker -->
 <script>
   pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -332,6 +327,7 @@
 <script>
 // ─── State ────────────────────────────────────────────────────
 let pdfText = null;   // Extracted PDF text, or null
+let pdfFileName = null; // Track the last uploaded filename
 let busy    = false;  // Prevent double-sends
 
 // ─── DOM refs ─────────────────────────────────────────────────
@@ -376,11 +372,13 @@ pdfInput.addEventListener("change", async (e) => {
 
   try {
     pdfText = await extractPDFText(file);
+    pdfFileName = file.name;
     fileName.textContent = file.name;
     setLoading(false);
   } catch (err) {
     showToast("Failed to read PDF. Is it a text-based PDF?");
     pdfText = null;
+    pdfFileName = null;
     fileBadge.classList.remove("visible");
     pdfInput.value = "";
     setLoading(false);
@@ -390,6 +388,7 @@ pdfInput.addEventListener("change", async (e) => {
 // Clear PDF
 clearFile.addEventListener("click", () => {
   pdfText = null;
+  pdfFileName = null;
   pdfInput.value = "";
   fileBadge.classList.remove("visible");
 });
@@ -427,12 +426,11 @@ async function sendMessage() {
     return;
   }
 
-  // Show user bubble
-  appendBubble(text || `<${fileName.textContent}> uploaded`, "user");
-
-  // Show file badge in chat history when a PDF is uploaded
-  if (pdfText && file.name) {
-    appendFileBadge(file.name, "user");
+  // Show user bubble (with file badge if a PDF was attached)
+  if (pdfText) {
+    appendUserMessageWithBadge(text, pdfFileName);
+  } else {
+    appendBubble(text, "user");
   }
   msgInput.value = "";
   setLoading(true);
@@ -447,6 +445,7 @@ async function sendMessage() {
 
   // Clear PDF after sending
   pdfText = null;
+  pdfFileName = null;
   pdfInput.value = "";
   fileBadge.classList.remove("visible");
 
@@ -501,26 +500,40 @@ function appendBubble(text, role) {
   return row;
 }
 
-// Append a file badge in the chat history
-function appendFileBadge(filename, role) {
+// Append a user message bubble with an attached file badge
+function appendUserMessageWithBadge(text, filename) {
   const row = document.createElement("div");
-  row.className = `msg-row ${role}`;
+  row.className = "msg-row user";
+  const wrapper = document.createElement("div");
+  wrapper.style.display = "flex";
+  wrapper.style.flexDirection = "column";
+  wrapper.style.alignItems = "flex-end";
+  wrapper.style.gap = "4px";
+
+  // File badge
   const badge = document.createElement("div");
-  badge.className = `bubble ${role}`;
+  badge.className = "bubble user";
   badge.style.fontSize = ".78rem";
   badge.style.display = "inline-flex";
   badge.style.alignItems = "center";
   badge.style.gap = "6px";
-  badge.style.background = role === "user" ? "var(--purple)" : "#f0eeff";
-  badge.style.color = role === "user" ? "#fff" : "var(--purple)";
-  badge.style.border = role === "user" ? "none" : "1px solid #c9c4f5";
+  badge.style.padding = "4px 10px";
+  badge.style.maxWidth = "fit-content";
   badge.innerHTML = `
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
       <polyline points="14 2 14 8 20 8"/>
     </svg>
     ${filename}`;
-  row.appendChild(badge);
+  wrapper.appendChild(badge);
+
+  // Text bubble
+  const bubble = document.createElement("div");
+  bubble.className = "bubble user";
+  bubble.textContent = text || "Uploaded a file";
+  wrapper.appendChild(bubble);
+
+  row.appendChild(wrapper);
   history.appendChild(row);
   scrollBottom();
 }

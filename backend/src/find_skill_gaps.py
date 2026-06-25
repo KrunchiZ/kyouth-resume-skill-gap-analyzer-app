@@ -7,6 +7,7 @@ import logging
 from pathlib import Path
 from fastmcp import Client
 from pydantic import BaseModel
+from dotenv import load_dotenv
 from fastmcp.client.transports import PythonStdioTransport
 
 from prompt_model import prompt_model
@@ -23,6 +24,8 @@ class SkillGapResult(BaseModel):
 	gaps: list[str]
 
 
+load_dotenv()
+
 # ---------------------------------------------------------------------------
 # ─── GLOBAL CONFIGURATION ───────────────────────────────────────────────────
 # ---------------------------------------------------------------------------
@@ -30,9 +33,10 @@ class SkillGapResult(BaseModel):
 DEBUG = False
 LOCAL_MODEL = True
 
-BASE = Path(__file__).parent / "data"
+BASE = os.getenv("DATA_DIR", "/app/data")
 RESUME_PATH = BASE / "resume_d3.txt" if DEBUG else BASE / "resume_d3_eval.txt"
-DB_PATH = BASE / "jobs_d1.db" if DEBUG else BASE / "jobs.db"
+DB_NAME = os.getenv("DB_NAME", "jobs.db")
+DB_PATH = BASE / DB_NAME
 
 # Skills that contain a literal slash and must NOT be split
 SLASH_EXCEPTIONS: frozenset[str] = frozenset({"a/b testing", "ci/cd"})
@@ -52,7 +56,7 @@ GEMINI_MODELS = [
 	"gemini-3-flash-preview",
 ]
 
-MODEL = OLLAMA_MODELS[0] if LOCAL_MODEL else GEMINI_MODELS[0]
+MODEL = OLLAMA_MODELS[0] if LOCAL_MODEL else GEMINI_MODELS[1]
 TEMPERATURE = 0.0
 TOP_P = 0.2
 

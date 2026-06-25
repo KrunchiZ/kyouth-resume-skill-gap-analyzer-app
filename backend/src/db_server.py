@@ -4,14 +4,20 @@ All queries are loaded from ./sql/*.sql files.
 Run standalone or used as a stdio MCP server by tag_data.py.
 """
 
+import os
 import sqlite3
 import sys
 from pathlib import Path
 from fastmcp import FastMCP
+from dotenv import load_dotenv
 
-DB_PATH: str = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("/app/data/jobs.db")
+load_dotenv()
 
-BASE = Path("/app/sql")
+BASE: str = Path(os.getenv("DATA_DIR", "/app/data"))
+DB_NAME: str = os.getenv("DB_NAME", "jobs.db")
+DB_PATH: str = Path(sys.argv[1]) if len(sys.argv) > 1 else BASE / DB_NAME
+
+BASE = Path(os.getenv("SQL_DIR", "/app/sql"))
 SQL_COUNT_AVG_DESC_LEN	= BASE / "count_avg_desc_length.sql"
 SQL_FETCH_UNTAGGED		= BASE / "fetch_untagged.sql"
 SQL_UPDATE_TECH_STACK	= BASE / "update_tech_stack.sql"

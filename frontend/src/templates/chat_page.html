@@ -402,6 +402,8 @@ msgInput.addEventListener("keydown", (e) => {
 
 // Preload Ollama AI chatbot
 window.addEventListener("load", async () => {
+  setLoading(true);
+  showTyping();
   const payload = {
     message:    "Hi",
     pdf_content: null,
@@ -421,9 +423,11 @@ window.addEventListener("load", async () => {
     }
 
     const data = await res.json();
+    hideTyping();
     appendBubble(data.response || "No response received.", "bot");
 
   } catch (err) {
+    hideTyping();
     appendBubble("Sorry, I couldn't reach the server. Please try again.", "bot");
     console.error("Chat error:", err);
   } finally {

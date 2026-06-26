@@ -49,19 +49,19 @@ The architecture consists of three containerized services: a **frontend** (chat 
    |----------|-------------|---------|
    | `DATA_DIR` | Internal Docker data/ directory containing the database | `/app/data` |
    | `DB_NAME` | Database file name | `jobs_d1.db` |
+   | `OLLAMA_MODEL_PATH` | Path to local host directory storing Ollama models | `/usr/share/ollama` or `C:\Users\<username>\` or `~`(home) |
 
    > **Security note:** Never commit your `.env` file. It is listed in `.gitignore`. The `.env.example` file contains placeholder values.
 
 3. **Create Docker Compose secret files**:
 
    Create a directory `Secrets` in the root of the project repository (Same location as docker-compose.yml).\
-   Then, create these three secret files in the `secrets` directory:
+   Then, create these secret files in the `secrets` directory:
 
    ```bash
    mkdir secrets
    touch secrets/backend_url.txt
    touch secrets/gemini_api_key.txt
-   touch secrets/ollama_model_path.txt
    ```
 
    Put the secret values in each file respectively.
@@ -70,7 +70,6 @@ The architecture consists of three containerized services: a **frontend** (chat 
    |-----------|-------------|---------|
    | `backend_url.txt` | Internal Docker network URL for backend | `http://backend:8001` |
    | `gemini_api_key.txt` | API key for Gemini models (used for chat responses) | Acquire from [Google AI Studio](https://aistudio.google.com/welcome) |
-   | `ollama_model_path.txt` | Path to local host directory storing Ollama models | `/usr/share/ollama` or `C:\Users\<username>\` or `~`(home) |
 
    > **Security note:** Never commit your `secrets/` file. It is listed in `.gitignore`.
 

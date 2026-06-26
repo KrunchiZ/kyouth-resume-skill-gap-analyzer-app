@@ -1,7 +1,9 @@
+import os
 import sys
 import logging
 import time
 import ollama
+from pathlib import Path
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
@@ -15,7 +17,19 @@ logging.getLogger("google_genai.models").setLevel(logging.WARNING)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
 load_dotenv()
-gemini_client = genai.Client()
+
+def get_secret(secret_name, default=None):
+	secret_path = Path(f"/run/secrets/{secret_name}")
+	
+	if os.path.exists(secret_path):
+		# .strip() removes trailing newlines added by files or command lines
+		return secret_path.read_text().strip()
+	else:
+		if default is not None:
+			return default
+		raise FileNotFoundError(f"Secret {secret_name} not found at {secret_path}")
+
+gemini_client = genai.Client(api_key=get_secret("gemini_api_key"))
 ollama_client = ollama.Client(host="http://ollama:11434")
 
 OLLAMA_MODELS = {

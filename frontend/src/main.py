@@ -12,12 +12,24 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-BACKEND_URL = os.getenv("BACKEND_URL", "http://backend:8001")
 
 app = FastAPI(title="Resume Helper Frontend")
 
 templates_dir = Path(__file__).parent / "templates"
 templates = Jinja2Templates(directory=templates_dir)
+
+def get_secret(secret_name, default=None):
+	secret_path = Path(f"/run/secrets/{secret_name}")
+	
+	if os.path.exists(secret_path):
+		# .strip() removes trailing newlines added by files or command lines
+		return secret_path.read_text().strip()
+	else:
+		if default is not None:
+			return default
+		raise FileNotFoundError(f"Secret {secret_name} not found at {secret_path}")
+
+BACKEND_URL = get_secret("backend_url", "http://backend:8001")
 
 # ── Request / Response models ──────────────────────────────────
 class ChatRequest(BaseModel):
@@ -39,7 +51,6 @@ _RATE_LIMITS_TXT = Path(__file__).parent / "rate_limits.txt"
 _WINDOW_SECONDS = 60  # sliding window size
 
 _request_timestamps: dict[str, list[float]] = defaultdict(list)
-
 
 def _parse_num(s: str) -> int:
 	s = s.upper().replace(",", "")

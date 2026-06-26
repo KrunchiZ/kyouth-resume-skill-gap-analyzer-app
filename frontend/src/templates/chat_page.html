@@ -270,10 +270,6 @@
 
     <!-- Chat history -->
     <div id="chat-history">
-      <!-- Initial bot greeting -->
-      <div class="msg-row bot">
-        <div class="bubble bot">Hi! How can I help you today?</div>
-      </div>
     </div>
 
     <!-- File badge (shown above input when PDF is ready) -->
@@ -401,6 +397,38 @@ msgInput.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
     sendMessage();
+  }
+});
+
+// Preload Ollama AI chatbot
+window.addEventListener("load", async () => {
+  const payload = {
+    message:    "Hi",
+    pdf_content: null,
+    timestamp:   new Date().toISOString(),
+  };
+
+  try {
+    const res = await fetch('/api/chat', {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Server error ${res.status}`);
+    }
+
+    const data = await res.json();
+    appendBubble(data.response || "No response received.", "bot");
+
+  } catch (err) {
+    appendBubble("Sorry, I couldn't reach the server. Please try again.", "bot");
+    console.error("Chat error:", err);
+  } finally {
+    setLoading(false);
+    msgInput.focus();
   }
 });
 

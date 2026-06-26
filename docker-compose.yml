@@ -7,7 +7,8 @@ services:
     env_file: .env
     environment:
       GEMINI_API_KEY: /run/secrets/gemini_api_key
-      OLLAMA_MODEL_PATH: /run/secrets/ollama_model_path
+    secrets:
+      - gemini_api_key
     ports:
       - "8001:8001"
     networks:
@@ -25,6 +26,8 @@ services:
     container_name: resume-frontend
     environment:
       BACKEND_URL: /run/secrets/backend_url
+    secrets:
+      - backend_url
     ports:
       - "8000:8000"
     depends_on:
@@ -55,5 +58,3 @@ secrets:
     file: secrets/gemini_api_key.txt
   backend_url:
     file: secrets/backend_url.txt
-  ollama_model_path:
-    file: secrets/ollama_model_path.txt
